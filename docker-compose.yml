@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+    app:
+        build: .
+        container_name: laravel_app
+        working_dir: /var/www
+        volumes:
+            - .:/var/www
+        depends_on:
+            - redis
+        command: php artisan serve --host=0.0.0.0 --port=8000
+        ports:
+            - "8000:8000"
+
+    redis:
+        image: redis:7-alpine
+        container_name: laravel_redis
+        ports:
+            - "6379:6379"
+
+    queue:
+        build: .
+        container_name: laravel_queue
+        working_dir: /var/www
+        volumes:
+            - .:/var/www
+        depends_on:
+            - redis
+        command: php artisan queue:work
+
+    echo:
+        image: node:18-alpine
+        container_name: laravel_echo
+        working_dir: /app
+        volumes:
+            - .:/app
+        ports:
+            - "6001:6001"
+        depends_on:
+            - redis
+        command: >
+            sh -c "
+            npm install -g laravel-echo-server &&
+            laravel-echo-server start
+            "
+
+networks:
+    default:
+        name: laravel_network
